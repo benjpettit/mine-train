@@ -15,7 +15,6 @@ class Learner():
         self.doc_ids = [doc["id"] for doc in self.docs]
         self.doc_index = {docId:index for index, docId in enumerate(self.doc_ids)}
         print("Loaded %d docs" % len(self.docs))
-        print(list(self.doc_index.items())[:10])
 
         self.vectorizer = TfidfVectorizer(stop_words='english',
                                      ngram_range=settings.NGRAM_RANGE,
@@ -46,11 +45,12 @@ class Learner():
         else:
             print("--> exploit our best guess")
             scoreFunc = lambda x: -x
-        rankedDocs = self.dither(sorted(zip(self.doc_ids, scores), key=lambda x: scoreFunc(x[1])))
+
+        rankedDocs = self.dither(sorted(zip(self.doc_ids, scores), key=lambda x: scoreFunc(x[1]))[:1000])
         for docId, score in rankedDocs:
             if docId not in self.alreadySeen:
                 candidates.append(self.docs[self.doc_index[docId]])
-                print("--> returning doc with score %.6f" % score)
+                print("--> returning doc with score ", score)
                 if len(candidates) >= settings.BATCH_SIZE:
                     return candidates
         print("No unseen documents found")
@@ -71,7 +71,7 @@ class Learner():
         for feature, score in self.top_features(k):
             print(feature, score)
         print("\nBottom %d features" % k)
-        for feature, score in self.top_features(k):
+        for feature, score in self.bottom_features(k):
             print(feature, score)
 
     def top_features(self, k):
@@ -82,8 +82,9 @@ class Learner():
 
     @staticmethod
     def dither(results):
-        # TODO: implement dithering
-        return results
+        ranks = np.arange(len(results))
+        ditherScores = np.log1p(ranks) + (np.log(settings.DITHERING_EPSILON) * np.random.randn(len(results)))
+        return list(np.array(results)[np.argsort(ditherScores)])
 
     @staticmethod
     def loadItems(dataDir):

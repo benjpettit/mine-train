@@ -26,7 +26,7 @@ if __name__ == "__main__":
     except:
         port = 5000
     learner = Learner(dataDir)
-    app.run(host="0.0.0.0", debug=True, port=port)
+    app.run(host="0.0.0.0", debug=True, port=port, use_reloader=False)
 
 
 
